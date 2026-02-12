@@ -19,7 +19,7 @@ package inplace
 import (
 	"fmt"
 
-	core "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	resource_admission "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/admission-controller/resource"
 	"k8s.io/autoscaler/vertical-pod-autoscaler/pkg/admission-controller/resource/pod/patch"
@@ -46,7 +46,7 @@ func (*resourcesInplaceUpdatesPatchCalculator) PatchResourceTarget() patch.Patch
 }
 
 // CalculatePatches calculates a JSON patch from a VPA's recommendation to send to the pod "resize" subresource as an in-place resize.
-func (c *resourcesInplaceUpdatesPatchCalculator) CalculatePatches(pod *core.Pod, vpa *vpa_types.VerticalPodAutoscaler) ([]resource_admission.PatchRecord, error) {
+func (c *resourcesInplaceUpdatesPatchCalculator) CalculatePatches(pod *corev1.Pod, vpa *vpa_types.VerticalPodAutoscaler) ([]resource_admission.PatchRecord, error) {
 	result := []resource_admission.PatchRecord{}
 
 	containersResources, _, err := c.recommendationProvider.GetContainersResourcesForPod(pod, vpa)
@@ -62,7 +62,7 @@ func (c *resourcesInplaceUpdatesPatchCalculator) CalculatePatches(pod *core.Pod,
 	return result, nil
 }
 
-func getContainerPatch(pod *core.Pod, i int, containerResources vpa_api_util.ContainerResources) []resource_admission.PatchRecord {
+func getContainerPatch(pod *corev1.Pod, i int, containerResources vpa_api_util.ContainerResources) []resource_admission.PatchRecord {
 	var patches []resource_admission.PatchRecord
 	// Add empty resources object if missing.
 	if pod.Spec.Containers[i].Resources.Limits == nil &&
@@ -76,7 +76,7 @@ func getContainerPatch(pod *core.Pod, i int, containerResources vpa_api_util.Con
 	return patches
 }
 
-func appendPatches(patches []resource_admission.PatchRecord, current core.ResourceList, containerIndex int, resources core.ResourceList, fieldName string) []resource_admission.PatchRecord {
+func appendPatches(patches []resource_admission.PatchRecord, current corev1.ResourceList, containerIndex int, resources corev1.ResourceList, fieldName string) []resource_admission.PatchRecord {
 	// Add empty object if it's missing and we're about to fill it.
 	if current == nil && len(resources) > 0 {
 		patches = append(patches, patch.GetPatchInitializingEmptyResourcesSubfield(containerIndex, fieldName))

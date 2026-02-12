@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	core "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	resource_admission "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/admission-controller/resource"
 	"k8s.io/autoscaler/vertical-pod-autoscaler/pkg/admission-controller/resource/pod/recommendation"
@@ -51,7 +51,7 @@ func (*resourcesUpdatesPatchCalculator) PatchResourceTarget() PatchResourceTarge
 	return Pod
 }
 
-func (c *resourcesUpdatesPatchCalculator) CalculatePatches(pod *core.Pod, vpa *vpa_types.VerticalPodAutoscaler) ([]resource_admission.PatchRecord, error) {
+func (c *resourcesUpdatesPatchCalculator) CalculatePatches(pod *corev1.Pod, vpa *vpa_types.VerticalPodAutoscaler) ([]resource_admission.PatchRecord, error) {
 	result := []resource_admission.PatchRecord{}
 
 	containersResources, annotationsPerContainer, err := c.recommendationProvider.GetContainersResourcesForPod(pod, vpa)
@@ -77,7 +77,7 @@ func (c *resourcesUpdatesPatchCalculator) CalculatePatches(pod *core.Pod, vpa *v
 	return result, nil
 }
 
-func getContainerPatch(pod *core.Pod, i int, annotationsPerContainer vpa_api_util.ContainerToAnnotationsMap, containerResources vpa_api_util.ContainerResources) ([]resource_admission.PatchRecord, string) {
+func getContainerPatch(pod *corev1.Pod, i int, annotationsPerContainer vpa_api_util.ContainerToAnnotationsMap, containerResources vpa_api_util.ContainerResources) ([]resource_admission.PatchRecord, string) {
 	var patches []resource_admission.PatchRecord
 	// Add empty resources object if missing.
 	requests, limits := resourcehelpers.ContainerRequestsAndLimits(pod.Spec.Containers[i].Name, pod)
@@ -97,7 +97,7 @@ func getContainerPatch(pod *core.Pod, i int, annotationsPerContainer vpa_api_uti
 	return patches, updatesAnnotation
 }
 
-func appendPatchesAndAnnotations(patches []resource_admission.PatchRecord, annotations []string, current core.ResourceList, containerIndex int, resources core.ResourceList, fieldName, resourceName string) ([]resource_admission.PatchRecord, []string) {
+func appendPatchesAndAnnotations(patches []resource_admission.PatchRecord, annotations []string, current corev1.ResourceList, containerIndex int, resources corev1.ResourceList, fieldName, resourceName string) ([]resource_admission.PatchRecord, []string) {
 	// Add empty object if it's missing and we're about to fill it.
 	if current == nil && len(resources) > 0 {
 		patches = append(patches, GetPatchInitializingEmptyResourcesSubfield(containerIndex, fieldName))

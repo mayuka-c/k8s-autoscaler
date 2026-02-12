@@ -24,9 +24,9 @@ import (
 	"strings"
 	"time"
 
-	core "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -59,7 +59,7 @@ func patchVpaStatus(vpaClient vpa_api.VerticalPodAutoscalerInterface, vpaName st
 		return nil, err
 	}
 
-	return vpaClient.Patch(context.TODO(), vpaName, types.JSONPatchType, bytes, meta.PatchOptions{}, "status")
+	return vpaClient.Patch(context.TODO(), vpaName, types.JSONPatchType, bytes, metav1.PatchOptions{}, "status")
 }
 
 // UpdateVpaStatusIfNeeded updates the status field of the VPA API object.
@@ -138,7 +138,7 @@ func NewVpaCheckpointLister(vpaClient *vpa_clientset.Clientset, stopChannel <-ch
 }
 
 // PodMatchesVPA returns true iff the vpaWithSelector matches the Pod.
-func PodMatchesVPA(pod *core.Pod, vpaWithSelector *VpaWithSelector) bool {
+func PodMatchesVPA(pod *corev1.Pod, vpaWithSelector *VpaWithSelector) bool {
 	return PodLabelsMatchVPA(pod.Namespace, labels.Set(pod.GetLabels()), vpaWithSelector.Vpa.Namespace, vpaWithSelector.Selector)
 }
 
@@ -157,7 +157,7 @@ func Stronger(a, b *vpa_types.VerticalPodAutoscaler) bool {
 		return true
 	}
 	// Compare creation timestamps of the VPA objects. This is the clue of the stronger logic.
-	var aTime, bTime meta.Time
+	var aTime, bTime metav1.Time
 	aTime = a.GetCreationTimestamp()
 	bTime = b.GetCreationTimestamp()
 	if !aTime.Equal(&bTime) {
@@ -168,7 +168,7 @@ func Stronger(a, b *vpa_types.VerticalPodAutoscaler) bool {
 }
 
 // GetControllingVPAForPod chooses the earliest created VPA from the input list that matches the given Pod.
-func GetControllingVPAForPod(ctx context.Context, pod *core.Pod, vpas []*VpaWithSelector, ctrlFetcher controllerfetcher.ControllerFetcher) *VpaWithSelector {
+func GetControllingVPAForPod(ctx context.Context, pod *corev1.Pod, vpas []*VpaWithSelector, ctrlFetcher controllerfetcher.ControllerFetcher) *VpaWithSelector {
 	parentController, err := FindParentControllerForPod(ctx, pod, ctrlFetcher)
 	if err != nil {
 		klog.ErrorS(err, "Failed to get parent controller for pod", "pod", klog.KObj(pod))
@@ -200,8 +200,8 @@ func GetControllingVPAForPod(ctx context.Context, pod *core.Pod, vpas []*VpaWith
 }
 
 // FindParentControllerForPod returns the parent controller (topmost well-known or scalable controller) for the given Pod.
-func FindParentControllerForPod(ctx context.Context, pod *core.Pod, ctrlFetcher controllerfetcher.ControllerFetcher) (*controllerfetcher.ControllerKeyWithAPIVersion, error) {
-	var ownerRefrence *meta.OwnerReference
+func FindParentControllerForPod(ctx context.Context, pod *corev1.Pod, ctrlFetcher controllerfetcher.ControllerFetcher) (*controllerfetcher.ControllerKeyWithAPIVersion, error) {
+	var ownerRefrence *metav1.OwnerReference
 	for i := range pod.OwnerReferences {
 		r := pod.OwnerReferences[i]
 		if r.Controller != nil && *r.Controller {
@@ -281,9 +281,9 @@ func CreateOrUpdateVpaCheckpoint(vpaCheckpointClient vpa_api.VerticalPodAutoscal
 	if err != nil {
 		return fmt.Errorf("cannot marshal VPA checkpoint status patches %+v. Reason: %+v", patches, err)
 	}
-	_, err = vpaCheckpointClient.Patch(context.TODO(), vpaCheckpoint.Name, types.JSONPatchType, bytes, meta.PatchOptions{})
+	_, err = vpaCheckpointClient.Patch(context.TODO(), vpaCheckpoint.Name, types.JSONPatchType, bytes, metav1.PatchOptions{})
 	if err != nil && strings.Contains(err.Error(), fmt.Sprintf("\"%s\" not found", vpaCheckpoint.Name)) {
-		_, err = vpaCheckpointClient.Create(context.TODO(), vpaCheckpoint, meta.CreateOptions{})
+		_, err = vpaCheckpointClient.Create(context.TODO(), vpaCheckpoint, metav1.CreateOptions{})
 	}
 	if err != nil {
 		return fmt.Errorf("cannot save checkpoint for vpa %s/%s container %s. Reason: %+v", vpaCheckpoint.Namespace, vpaCheckpoint.Name, vpaCheckpoint.Spec.ContainerName, err)

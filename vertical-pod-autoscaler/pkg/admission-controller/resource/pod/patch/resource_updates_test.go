@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	core "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	resource_admission "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/admission-controller/resource"
@@ -44,7 +44,7 @@ type fakeRecommendationProvider struct {
 	e                      error
 }
 
-func (frp *fakeRecommendationProvider) GetContainersResourcesForPod(pod *core.Pod, vpa *vpa_types.VerticalPodAutoscaler) ([]vpa_api_util.ContainerResources, vpa_api_util.ContainerToAnnotationsMap, error) {
+func (frp *fakeRecommendationProvider) GetContainersResourcesForPod(pod *corev1.Pod, vpa *vpa_types.VerticalPodAutoscaler) ([]vpa_api_util.ContainerResources, vpa_api_util.ContainerToAnnotationsMap, error) {
 	return frp.resources, frp.containerToAnnotations, frp.e
 }
 
@@ -52,7 +52,7 @@ func addResourcesPatch(idx int) resource_admission.PatchRecord {
 	return resource_admission.PatchRecord{
 		Op:    "add",
 		Path:  fmt.Sprintf("/spec/containers/%d/resources", idx),
-		Value: core.ResourceRequirements{},
+		Value: corev1.ResourceRequirements{},
 	}
 }
 
@@ -60,7 +60,7 @@ func addRequestsPatch(idx int) resource_admission.PatchRecord {
 	return resource_admission.PatchRecord{
 		Op:    "add",
 		Path:  fmt.Sprintf("/spec/containers/%d/resources/requests", idx),
-		Value: core.ResourceList{},
+		Value: corev1.ResourceList{},
 	}
 }
 
@@ -68,7 +68,7 @@ func addLimitsPatch(idx int) resource_admission.PatchRecord {
 	return resource_admission.PatchRecord{
 		Op:    "add",
 		Path:  fmt.Sprintf("/spec/containers/%d/resources/limits", idx),
-		Value: core.ResourceList{},
+		Value: corev1.ResourceList{},
 	}
 }
 
@@ -105,7 +105,7 @@ func addAnnotationRequest(updateResources [][]string, kind string) resource_admi
 func TestCalculatePatches_ResourceUpdates(t *testing.T) {
 	tests := []struct {
 		name                 string
-		pod                  *core.Pod
+		pod                  *corev1.Pod
 		namespace            string
 		recommendResources   []vpa_api_util.ContainerResources
 		recommendAnnotations vpa_api_util.ContainerToAnnotationsMap
@@ -115,15 +115,15 @@ func TestCalculatePatches_ResourceUpdates(t *testing.T) {
 	}{
 		{
 			name: "new cpu recommendation",
-			pod: &core.Pod{
-				Spec: core.PodSpec{
-					Containers: []core.Container{{}},
+			pod: &corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{}},
 				},
 			},
 			namespace: "default",
 			recommendResources: []vpa_api_util.ContainerResources{
 				{
-					Requests: core.ResourceList{
+					Requests: corev1.ResourceList{
 						cpu: resource.MustParse("1"),
 					},
 				},
@@ -138,11 +138,11 @@ func TestCalculatePatches_ResourceUpdates(t *testing.T) {
 		},
 		{
 			name: "replacement cpu recommendation",
-			pod: &core.Pod{
-				Spec: core.PodSpec{
-					Containers: []core.Container{{
-						Resources: core.ResourceRequirements{
-							Requests: core.ResourceList{
+			pod: &corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
 								cpu: resource.MustParse("0"),
 							},
 						},
@@ -152,7 +152,7 @@ func TestCalculatePatches_ResourceUpdates(t *testing.T) {
 			namespace: "default",
 			recommendResources: []vpa_api_util.ContainerResources{
 				{
-					Requests: core.ResourceList{
+					Requests: corev1.ResourceList{
 						cpu: resource.MustParse("1"),
 					},
 				},
@@ -166,13 +166,13 @@ func TestCalculatePatches_ResourceUpdates(t *testing.T) {
 		{
 			name: "replacement cpu request recommendation from container status",
 			pod: test.Pod().
-				AddContainer(core.Container{}).
+				AddContainer(corev1.Container{}).
 				AddContainerStatus(test.ContainerStatus().
 					WithCPURequest(resource.MustParse("0")).Get()).Get(),
 			namespace: "default",
 			recommendResources: []vpa_api_util.ContainerResources{
 				{
-					Requests: core.ResourceList{
+					Requests: corev1.ResourceList{
 						cpu: resource.MustParse("1"),
 					},
 				},
@@ -185,12 +185,12 @@ func TestCalculatePatches_ResourceUpdates(t *testing.T) {
 		},
 		{
 			name: "two containers",
-			pod: &core.Pod{
-				Spec: core.PodSpec{
-					Containers: []core.Container{{
+			pod: &corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
 						Name: "container-1",
-						Resources: core.ResourceRequirements{
-							Requests: core.ResourceList{
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
 								cpu: resource.MustParse("0"),
 							},
 						},
@@ -200,12 +200,12 @@ func TestCalculatePatches_ResourceUpdates(t *testing.T) {
 			namespace: "default",
 			recommendResources: []vpa_api_util.ContainerResources{
 				{
-					Requests: core.ResourceList{
+					Requests: corev1.ResourceList{
 						cpu: resource.MustParse("1"),
 					},
 				},
 				{
-					Requests: core.ResourceList{
+					Requests: corev1.ResourceList{
 						cpu: resource.MustParse("2"),
 					},
 				},
@@ -221,15 +221,15 @@ func TestCalculatePatches_ResourceUpdates(t *testing.T) {
 		},
 		{
 			name: "new cpu limit",
-			pod: &core.Pod{
-				Spec: core.PodSpec{
-					Containers: []core.Container{{}},
+			pod: &corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{}},
 				},
 			},
 			namespace: "default",
 			recommendResources: []vpa_api_util.ContainerResources{
 				{
-					Limits: core.ResourceList{
+					Limits: corev1.ResourceList{
 						cpu: resource.MustParse("1"),
 					},
 				},
@@ -244,11 +244,11 @@ func TestCalculatePatches_ResourceUpdates(t *testing.T) {
 		},
 		{
 			name: "replacement cpu limit",
-			pod: &core.Pod{
-				Spec: core.PodSpec{
-					Containers: []core.Container{{
-						Resources: core.ResourceRequirements{
-							Limits: core.ResourceList{
+			pod: &corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Resources: corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
 								cpu: resource.MustParse("0"),
 							},
 						},
@@ -258,7 +258,7 @@ func TestCalculatePatches_ResourceUpdates(t *testing.T) {
 			namespace: "default",
 			recommendResources: []vpa_api_util.ContainerResources{
 				{
-					Limits: core.ResourceList{
+					Limits: corev1.ResourceList{
 						cpu: resource.MustParse("1"),
 					},
 				},
@@ -272,13 +272,13 @@ func TestCalculatePatches_ResourceUpdates(t *testing.T) {
 		{
 			name: "replacement cpu limit from container status",
 			pod: test.Pod().
-				AddContainer(core.Container{}).
+				AddContainer(corev1.Container{}).
 				AddContainerStatus(test.ContainerStatus().
 					WithCPULimit(resource.MustParse("0")).Get()).Get(),
 			namespace: "default",
 			recommendResources: []vpa_api_util.ContainerResources{
 				{
-					Limits: core.ResourceList{
+					Limits: corev1.ResourceList{
 						cpu: resource.MustParse("1"),
 					},
 				},
@@ -316,17 +316,17 @@ func TestCalculatePatches_ResourceUpdates(t *testing.T) {
 func TestGetPatches_TwoReplacementResources(t *testing.T) {
 	recommendResources := []vpa_api_util.ContainerResources{
 		{
-			Requests: core.ResourceList{
+			Requests: corev1.ResourceList{
 				cpu:        resource.MustParse("1"),
 				unobtanium: resource.MustParse("2"),
 			},
 		},
 	}
-	pod := &core.Pod{
-		Spec: core.PodSpec{
-			Containers: []core.Container{{
-				Resources: core.ResourceRequirements{
-					Requests: core.ResourceList{
+	pod := &corev1.Pod{
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{{
+				Resources: corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
 						cpu: resource.MustParse("0"),
 					},
 				},
