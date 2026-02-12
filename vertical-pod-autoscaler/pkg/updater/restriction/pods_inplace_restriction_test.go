@@ -407,7 +407,7 @@ func TestEvictionToleranceForInPlaceWithSkipDisruptionBudgetWithLessThanMinimumP
 	livePods := 1
 	tolerance := 0.8
 
-	rc := apiv1.ReplicationController{
+	rc := corev1.ReplicationController{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "rc",
 			Namespace: "default",
@@ -415,12 +415,12 @@ func TestEvictionToleranceForInPlaceWithSkipDisruptionBudgetWithLessThanMinimumP
 		TypeMeta: metav1.TypeMeta{
 			Kind: "ReplicationController",
 		},
-		Spec: apiv1.ReplicationControllerSpec{
+		Spec: corev1.ReplicationControllerSpec{
 			Replicas: &replicas,
 		},
 	}
 
-	pods := make([]*apiv1.Pod, livePods)
+	pods := make([]*corev1.Pod, livePods)
 	for i := range pods {
 		pods[i] = test.Pod().
 			WithName(getTestPodName(i)).
